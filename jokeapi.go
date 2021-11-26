@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 )
 
 const (
-	jokeapiURL = "https://v2.jokeapi.dev/joke/Any"
+	jokeapiURLTmpl = "https://v2.jokeapi.dev/joke/Any?blacklistFlags=%s"
 )
 
 // JSON represents the return from quotes.rest
@@ -27,8 +28,10 @@ func (j JSON) String() string {
 	return fmt.Sprintf("%s\n%s", j.Setup, j.Delivery)
 }
 
-func jokeapi() (msg string, err error) {
-	res, err := http.Get(jokeapiURL)
+func jokeapi(blacklist string) (msg string, err error) {
+	url := fmt.Sprintf(jokeapiURLTmpl, blacklist)
+
+	res, err := http.Get(url)
 	if err != nil {
 		return "", err
 	}
@@ -39,6 +42,8 @@ func jokeapi() (msg string, err error) {
 	if err != nil {
 		return "", err
 	}
+
+	log.Print(string(body))
 
 	j := JSON{}
 	err = json.Unmarshal(body, &j)

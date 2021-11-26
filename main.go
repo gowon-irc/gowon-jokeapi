@@ -14,8 +14,9 @@ import (
 )
 
 type Options struct {
-	Prefix string `short:"P" long:"prefix" env:"GOWON_PREFIX" default:"." description:"prefix for commands"`
-	Broker string `short:"b" long:"broker" env:"GOWON_BROKER" default:"localhost:1883" description:"mqtt broker"`
+	Prefix    string `short:"P" long:"prefix" env:"GOWON_PREFIX" default:"." description:"prefix for commands"`
+	Broker    string `short:"b" long:"broker" env:"GOWON_BROKER" default:"localhost:1883" description:"mqtt broker"`
+	Blacklist string `short:"B" long:"blacklist" env:"GOWON_JOKEAPI_BLACKLIST" description:"command separated list of categories to blacklist"`
 }
 
 const (
@@ -24,8 +25,10 @@ const (
 	mqttDisconnectTimeout    = 1000
 )
 
-func jokeapiHandler(m gowon.Message) (string, error) {
-	return jokeapi()
+func genJokeapiHandler(blacklist string) func(m gowon.Message) (string, error) {
+	return func(m gowon.Message) (string, error) {
+		return jokeapi(blacklist)
+	}
 }
 
 func defaultPublishHandler(c mqtt.Client, msg mqtt.Message) {
@@ -65,7 +68,7 @@ func main() {
 	mqttOpts.OnConnect = onConnectHandler
 
 	mr := gowon.NewMessageRouter()
-	mr.AddCommand("joke", jokeapiHandler)
+	mr.AddCommand("joke", genJokeapiHandler(opts.Blacklist))
 	mr.Subscribe(mqttOpts, moduleName)
 
 	log.Print("connecting to broker")
